@@ -4,7 +4,7 @@
     <jdbc-connection-pool
             name="sygepPool"
             datasource-classname="org.postgresql.ds.PGSimpleDataSource"
-            res-type="jakarta.sql.DataSource">
+            res-type="javax.sql.DataSource">
         <property name="ServerName" value="localhost"/>
         <property name="PortNumber" value="5432"/>
         <property name="DatabaseName" value="sygep"/>

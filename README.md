@@ -6,11 +6,6 @@ Systeme de Gestion et d'Evaluation des Projets Academiques avec IA.
 
 SYGEP centralise le cycle de vie complet d'un projet academique: soumission, validation, suivi, evaluation et archivage. L'application suit une architecture multi-tiers Jakarta EE et prepare l'integration d'une assistance intelligente cote serveur pour l'analyse de qualite, la detection de similarite et l'aide a l'evaluation.
 
-## Repartition des roles
-
-- Andy = Module A: Proposition & Validation
-- Dahl = Module B: Supervision & Evaluation
-
 ## Workflow resume
 
 Soumission -> validation -> suivi -> evaluation -> archivage
@@ -22,6 +17,7 @@ Soumission -> validation -> suivi -> evaluation -> archivage
 - JPA / EclipseLink
 - JSP / JSTL
 - Maven WAR
+- PostgreSQL
 
 ## Structure du projet
 
@@ -50,16 +46,38 @@ Le fichier `glassfish-resources.xml` est preconfigure avec un pool PostgreSQL lo
 
 ## Demarrage rapide
 
-1. Creer la ressource GlassFish a partir de `src/main/setup/glassfish-resources.xml`
-2. Construire le WAR avec `mvn clean package`
-3. Deployer `target/sygep.war` sur GlassFish 7+
+1. Creer la base PostgreSQL `sygep`.
+2. Adapter les identifiants dans `src/main/setup/glassfish-resources.xml`.
+3. Creer la ressource GlassFish a partir de `src/main/setup/glassfish-resources.xml`.
+4. Construire le WAR avec `mvn clean package`.
+5. Deployer `target/sygep.war` sur GlassFish 7+.
 
-## Fondation livree
+EclipseLink cree ou etend automatiquement les tables avec `eclipselink.ddl-generation=create-or-extend-tables`.
 
-- Projet Maven WAR `sygep`
-- `persistence.xml` et `web.xml` preconfigures
-- Datasource JNDI `jdbc/sygepDS`
-- Entites de base `User` et `Project`
-- EJB `AdminService`
-- Servlets `AuthServlet`, `ProposalServlet`, `SupervisorServlet`
-- Filtre `RoleFilter`
+## Comptes de demonstration
+
+Les comptes suivants sont crees automatiquement au premier acces a `/login` si absents :
+
+- `admin@sygep.local` / `admin123`
+- `student@sygep.local` / `student123`
+- `supervisor@sygep.local` / `supervisor123`
+
+## Fonctionnalites livrees
+
+- Authentification, logout et filtrage par roles `ADMIN`, `STUDENT`, `SUPERVISOR`.
+- Soumission, modification et consultation des projets.
+- Validation, rejet et affectation de superviseur par l'administrateur.
+- Ajout de commentaires et rapports de suivi par le superviseur.
+- Evaluation technique/documentation/presentation avec calcul automatique de la note finale.
+- Archivage automatique apres evaluation.
+- `AIService` simplifie : longueur du texte, score, qualite et suggestions.
+
+## Routes principales
+
+- `/login`, `/logout`
+- `/dashboard`
+- `/projects`
+- `/proposal/new`, `/proposal/edit`, `/proposal/submit`, `/proposal/update`, `/proposal/analyze`
+- `/admin/projects`, `/admin/validate`, `/admin/reject`, `/admin/assign`
+- `/supervisor/dashboard`, `/supervisor/comment`, `/supervisor/progress`
+- `/evaluation/new`, `/evaluation/save`
