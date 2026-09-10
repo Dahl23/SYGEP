@@ -43,6 +43,43 @@ public class EvaluationService {
         return project;
     }
 
+    public List<Project> findEvaluatedProjectsByEvaluator(Long evaluatorId) {
+        List<Project> projects = entityManager.createQuery(
+                        "SELECT p FROM SygepProject p "
+                                + "WHERE p.statut IN :statuses "
+                                + "AND EXISTS (SELECT e FROM SygepEvaluation e WHERE e.project = p AND e.evaluator.id = :evaluatorId) "
+                                + "ORDER BY p.updatedAt DESC",
+                        Project.class)
+                .setParameter("statuses", List.of(ProjectStatus.EVALUATED, ProjectStatus.ARCHIVED))
+                .setParameter("evaluatorId", evaluatorId)
+                .getResultList();
+        projects.forEach(this::initializeProjectSummary);
+        return projects;
+    }
+
+    public Evaluation reEvaluateProject(Long projectId, Long evaluatorId, BigDecimal technicalScore,
+                                        BigDecimal documentationScore, BigDecimal presentationScore,
+                                        String feedback) {
+        Project project = requireProject(projectId);
+        User evaluator = requireEvaluator(evaluatorId);
+
+        Evaluation evaluation = findEvaluationByProject(projectId);
+        if (evaluation == null) {
+            throw new IllegalStateException("Aucune evaluation existante. Utilisez la premiere evaluation.");
+        }
+        ensureEvaluationAccess(project, evaluator);
+
+        evaluation.setEvaluator(evaluator);
+        evaluation.setTechnicalScore(normalizeScore(technicalScore, "Note technique"));
+        evaluation.setDocumentationScore(normalizeScore(documentationScore, "Note documentation"));
+        evaluation.setPresentationScore(normalizeScore(presentationScore, "Note presentation"));
+        evaluation.setFeedback(feedback == null || feedback.isBlank() ? null : feedback.trim());
+        evaluation.setEvaluatedAt(LocalDateTime.now());
+        evaluation.calculateFinalScore();
+        project.setStatut(ProjectStatus.ARCHIVED);
+        return evaluation;
+    }
+
     public Evaluation evaluateProject(Long projectId, Long evaluatorId, BigDecimal technicalScore,
                                       BigDecimal documentationScore, BigDecimal presentationScore,
                                       String feedback) {
@@ -107,8 +144,8 @@ public class EvaluationService {
         if (project.getStatut() == ProjectStatus.SUBMITTED || project.getStatut() == ProjectStatus.REJECTED) {
             throw new IllegalStateException("Ce projet doit etre valide avant evaluation.");
         }
-        if (project.getStatut() == ProjectStatus.ARCHIVED) {
-            throw new IllegalStateException("Ce projet est deja archive.");
+        if (project.getStatut() == ProjectStatus.ARCHIVED && findEvaluationByProject(project.getId()) == null) {
+            throw new IllegalStateException("Ce projet est deja archive sans evaluation.");
         }
         if (evaluator.getRole() == Role.ADMIN) {
             return;

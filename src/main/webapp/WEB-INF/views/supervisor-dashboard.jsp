@@ -56,6 +56,17 @@
                                 </div>
                             </c:forEach>
                         </div>
+                        <nav class="pagination">
+                            <c:if test="${projectsPage > 1}">
+                                <a class="button secondary"
+                                   href="${pageContext.request.contextPath}/supervisor/dashboard?page=${projectsPage - 1}">Precedent</a>
+                            </c:if>
+                            <span class="muted">Page ${projectsPage} / ${projectsTotalPages}</span>
+                            <c:if test="${projectsPage < projectsTotalPages}">
+                                <a class="button secondary"
+                                   href="${pageContext.request.contextPath}/supervisor/dashboard?page=${projectsPage + 1}">Suivant</a>
+                            </c:if>
+                        </nav>
                     </c:otherwise>
                 </c:choose>
             </article>
@@ -76,9 +87,61 @@
                                 </div>
                             </c:forEach>
                         </div>
+                        <nav class="pagination">
+                            <c:if test="${readyPage > 1}">
+                                <a class="button secondary"
+                                   href="${pageContext.request.contextPath}/supervisor/dashboard?readyPage=${readyPage - 1}">Precedent</a>
+                            </c:if>
+                            <span class="muted">Page ${readyPage} / ${readyTotalPages}</span>
+                            <c:if test="${readyPage < readyTotalPages}">
+                                <a class="button secondary"
+                                   href="${pageContext.request.contextPath}/supervisor/dashboard?readyPage=${readyPage + 1}">Suivant</a>
+                            </c:if>
+                        </nav>
                     </c:otherwise>
                 </c:choose>
             </article>
+        </section>
+
+        <section class="panel section">
+            <h2>Mes evaluations</h2>
+            <c:choose>
+                <c:when test="${empty evaluatedProjects}">
+                    <p class="muted">Aucune evaluation effectuee pour le moment.</p>
+                </c:when>
+                <c:otherwise>
+                    <div class="list">
+                        <c:forEach var="project" items="${evaluatedProjects}">
+                            <div class="item">
+                                <h3>${project.titre}</h3>
+                                <p><span class="badge ${project.statutName}">${project.statut.label}</span></p>
+                                <p class="muted">${project.student.displayName}</p>
+                                <p><strong>Note finale :</strong>
+                                    <c:choose>
+                                        <c:when test="${not empty project.evaluation.finalScore}">${project.evaluation.finalScore}/20</c:when>
+                                        <c:otherwise>Non notee</c:otherwise>
+                                    </c:choose>
+                                </p>
+                                <div class="actions">
+                                    <a class="button secondary"
+                                       href="${pageContext.request.contextPath}/evaluation/new?projectId=${project.id}">Re-evaluer</a>
+                                </div>
+                            </div>
+                        </c:forEach>
+                    </div>
+                    <nav class="pagination">
+                        <c:if test="${evaluatedPage > 1}">
+                            <a class="button secondary"
+                               href="${pageContext.request.contextPath}/supervisor/dashboard?evaluatedPage=${evaluatedPage - 1}">Precedent</a>
+                        </c:if>
+                        <span class="muted">Page ${evaluatedPage} / ${evaluatedTotalPages}</span>
+                        <c:if test="${evaluatedPage < evaluatedTotalPages}">
+                            <a class="button secondary"
+                               href="${pageContext.request.contextPath}/supervisor/dashboard?evaluatedPage=${evaluatedPage + 1}">Suivant</a>
+                        </c:if>
+                    </nav>
+                </c:otherwise>
+            </c:choose>
         </section>
 
         <c:if test="${not empty selectedProject}">
@@ -103,18 +166,49 @@
                             <div class="item">
                                 <p>${comment.comment}</p>
                                 <p class="muted">${comment.createdAt}</p>
+                                <c:if test="${selectedProject.statutName != 'ARCHIVED'}">
+                                    <div class="actions">
+                                        <a class="button secondary"
+                                           href="${pageContext.request.contextPath}/supervisor/dashboard?projectId=${selectedProject.id}&editCommentId=${comment.id}">Modifier</a>
+                                        <form class="inline-form" method="post"
+                                              action="${pageContext.request.contextPath}/supervisor/comment/delete">
+                                            <input type="hidden" name="projectId" value="${selectedProject.id}">
+                                            <input type="hidden" name="commentId" value="${comment.id}">
+                                            <button type="submit" class="danger">Supprimer</button>
+                                        </form>
+                                    </div>
+                                </c:if>
                             </div>
                         </c:forEach>
                     </div>
 
                     <c:if test="${selectedProject.statutName != 'ARCHIVED'}">
-                        <form class="stack" method="post" action="${pageContext.request.contextPath}/supervisor/comment">
-                            <input type="hidden" name="projectId" value="${selectedProject.id}">
-                            <label>Nouveau commentaire
-                                <textarea name="comment" required></textarea>
-                            </label>
-                            <button type="submit">Ajouter</button>
-                        </form>
+                        <c:choose>
+                            <c:when test="${not empty editComment}">
+                                <form class="stack" method="post"
+                                      action="${pageContext.request.contextPath}/supervisor/comment/update">
+                                    <input type="hidden" name="projectId" value="${selectedProject.id}">
+                                    <input type="hidden" name="commentId" value="${editComment.id}">
+                                    <label>Modifier le commentaire
+                                        <textarea name="comment" required>${editComment.comment}</textarea>
+                                    </label>
+                                    <div class="actions">
+                                        <button type="submit">Enregistrer</button>
+                                        <a class="button secondary"
+                                           href="${pageContext.request.contextPath}/supervisor/dashboard?projectId=${selectedProject.id}">Annuler</a>
+                                    </div>
+                                </form>
+                            </c:when>
+                            <c:otherwise>
+                                <form class="stack" method="post" action="${pageContext.request.contextPath}/supervisor/comment">
+                                    <input type="hidden" name="projectId" value="${selectedProject.id}">
+                                    <label>Nouveau commentaire
+                                        <textarea name="comment" required></textarea>
+                                    </label>
+                                    <button type="submit">Ajouter</button>
+                                </form>
+                            </c:otherwise>
+                        </c:choose>
                     </c:if>
                 </article>
 
@@ -126,24 +220,61 @@
                                 <h3>${report.title}</h3>
                                 <p>${report.content}</p>
                                 <p class="muted">${report.progressPercent}% - ${report.createdAt}</p>
+                                <c:if test="${selectedProject.statutName != 'ARCHIVED'}">
+                                    <div class="actions">
+                                        <a class="button secondary"
+                                           href="${pageContext.request.contextPath}/supervisor/dashboard?projectId=${selectedProject.id}&editReportId=${report.id}">Modifier</a>
+                                        <form class="inline-form" method="post"
+                                              action="${pageContext.request.contextPath}/supervisor/progress/delete">
+                                            <input type="hidden" name="projectId" value="${selectedProject.id}">
+                                            <input type="hidden" name="reportId" value="${report.id}">
+                                            <button type="submit" class="danger">Supprimer</button>
+                                        </form>
+                                    </div>
+                                </c:if>
                             </div>
                         </c:forEach>
                     </div>
 
                     <c:if test="${selectedProject.statutName != 'ARCHIVED'}">
-                        <form class="stack" method="post" action="${pageContext.request.contextPath}/supervisor/progress">
-                            <input type="hidden" name="projectId" value="${selectedProject.id}">
-                            <label>Titre
-                                <input name="title" required>
-                            </label>
-                            <label>Progression (%)
-                                <input name="progressPercent" type="number" min="0" max="100" value="50" required>
-                            </label>
-                            <label>Contenu
-                                <textarea name="content" required></textarea>
-                            </label>
-                            <button type="submit">Ajouter le suivi</button>
-                        </form>
+                        <c:choose>
+                            <c:when test="${not empty editReport}">
+                                <form class="stack" method="post"
+                                      action="${pageContext.request.contextPath}/supervisor/progress/update">
+                                    <input type="hidden" name="projectId" value="${selectedProject.id}">
+                                    <input type="hidden" name="reportId" value="${editReport.id}">
+                                    <label>Titre
+                                        <input name="title" value="${editReport.title}" required>
+                                    </label>
+                                    <label>Progression (%)
+                                        <input name="progressPercent" type="number" min="0" max="100" value="${editReport.progressPercent}" required>
+                                    </label>
+                                    <label>Contenu
+                                        <textarea name="content" required>${editReport.content}</textarea>
+                                    </label>
+                                    <div class="actions">
+                                        <button type="submit">Enregistrer</button>
+                                        <a class="button secondary"
+                                           href="${pageContext.request.contextPath}/supervisor/dashboard?projectId=${selectedProject.id}">Annuler</a>
+                                    </div>
+                                </form>
+                            </c:when>
+                            <c:otherwise>
+                                <form class="stack" method="post" action="${pageContext.request.contextPath}/supervisor/progress">
+                                    <input type="hidden" name="projectId" value="${selectedProject.id}">
+                                    <label>Titre
+                                        <input name="title" required>
+                                    </label>
+                                    <label>Progression (%)
+                                        <input name="progressPercent" type="number" min="0" max="100" value="50" required>
+                                    </label>
+                                    <label>Contenu
+                                        <textarea name="content" required></textarea>
+                                    </label>
+                                    <button type="submit">Ajouter le suivi</button>
+                                </form>
+                            </c:otherwise>
+                        </c:choose>
                     </c:if>
                 </article>
             </section>

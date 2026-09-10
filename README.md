@@ -68,8 +68,12 @@ Les comptes suivants sont crees automatiquement au premier acces a `/login` si a
 - Soumission, modification et consultation des projets.
 - Validation, rejet et affectation de superviseur par l'administrateur.
 - Ajout de commentaires et rapports de suivi par le superviseur.
+- Edition et suppression des commentaires et rapports de suivi par le superviseur.
 - Evaluation technique/documentation/presentation avec calcul automatique de la note finale.
+- Re-evaluation d'un projet deja archive avec mise a jour de la note finale.
+- Historique des evaluations effectuees par le superviseur.
 - Archivage automatique apres evaluation.
+- Listes paginees sur le tableau de bord superviseur.
 - `AIService` simplifie : longueur du texte, score, qualite et suggestions.
 
 ## Routes principales

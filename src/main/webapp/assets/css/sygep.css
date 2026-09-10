@@ -266,6 +266,28 @@ th {
     padding: 1rem;
 }
 
+.pagination {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.pagination .button,
+button.small {
+    padding: 0.4rem 0.7rem;
+}
+
+.inline-form {
+    display: inline;
+}
+
+.inline-form button {
+    padding: 0.4rem 0.7rem;
+}
+
 pre {
     white-space: pre-wrap;
 }

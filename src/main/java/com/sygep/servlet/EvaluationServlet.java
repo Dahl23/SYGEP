@@ -34,15 +34,28 @@ public class EvaluationServlet extends BaseServlet {
         Long projectId = parseLong(request.getParameter("projectId"));
 
         try {
-            evaluationService.evaluateProject(
-                    projectId,
-                    currentUserId(request),
-                    parseScore(request.getParameter("technicalScore")),
-                    parseScore(request.getParameter("documentationScore")),
-                    parseScore(request.getParameter("presentationScore")),
-                    request.getParameter("feedback")
-            );
-            flash(request, "success", "Evaluation enregistree. Le projet est archive automatiquement.");
+            boolean existing = evaluationService.findEvaluationByProject(projectId) != null;
+            if (existing) {
+                evaluationService.reEvaluateProject(
+                        projectId,
+                        currentUserId(request),
+                        parseScore(request.getParameter("technicalScore")),
+                        parseScore(request.getParameter("documentationScore")),
+                        parseScore(request.getParameter("presentationScore")),
+                        request.getParameter("feedback")
+                );
+                flash(request, "success", "Evaluation mise a jour.");
+            } else {
+                evaluationService.evaluateProject(
+                        projectId,
+                        currentUserId(request),
+                        parseScore(request.getParameter("technicalScore")),
+                        parseScore(request.getParameter("documentationScore")),
+                        parseScore(request.getParameter("presentationScore")),
+                        request.getParameter("feedback")
+                );
+                flash(request, "success", "Evaluation enregistree. Le projet est archive automatiquement.");
+            }
             response.sendRedirect(request.getContextPath() + "/supervisor/dashboard");
         } catch (RuntimeException exception) {
             request.setAttribute("error", exception.getMessage());

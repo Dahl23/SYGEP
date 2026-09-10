@@ -152,6 +152,61 @@ public class ProjectService {
         return report;
     }
 
+    public SupervisorComment findSupervisorComment(Long commentId, Long supervisorId) {
+        SupervisorComment comment = requireComment(commentId);
+        requireCommentAccess(comment, supervisorId);
+        return comment;
+    }
+
+    public SupervisorComment updateSupervisorComment(Long commentId, Long supervisorId, String newComment) {
+        SupervisorComment comment = requireComment(commentId);
+        requireCommentAccess(comment, supervisorId);
+        requireEditableContent(comment.getProject());
+        if (newComment == null || newComment.isBlank()) {
+            throw new IllegalArgumentException("Le commentaire est obligatoire.");
+        }
+        comment.setComment(newComment.trim());
+        return comment;
+    }
+
+    public void deleteSupervisorComment(Long commentId, Long supervisorId) {
+        SupervisorComment comment = requireComment(commentId);
+        requireCommentAccess(comment, supervisorId);
+        requireEditableContent(comment.getProject());
+        comment.getProject().getSupervisorComments().remove(comment);
+        entityManager.remove(comment);
+    }
+
+    public ProgressReport findProgressReport(Long reportId, Long userId) {
+        ProgressReport report = requireReport(reportId);
+        requireReportAccess(report, userId);
+        return report;
+    }
+
+    public ProgressReport updateProgressReport(Long reportId, Long authorId, String title, String content, Integer progressPercent) {
+        ProgressReport report = requireReport(reportId);
+        requireReportAccess(report, authorId);
+        requireEditableContent(report.getProject());
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Le titre du suivi est obligatoire.");
+        }
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("Le contenu du suivi est obligatoire.");
+        }
+        report.setTitle(title.trim());
+        report.setContent(content.trim());
+        report.setProgressPercent(normalizePercent(progressPercent));
+        return report;
+    }
+
+    public void deleteProgressReport(Long reportId, Long userId) {
+        ProgressReport report = requireReport(reportId);
+        requireReportAccess(report, userId);
+        requireEditableContent(report.getProject());
+        report.getProject().getProgressReports().remove(report);
+        entityManager.remove(report);
+    }
+
     private void applyAI(Project project) {
         AIAnalysisResult result = aiService.analyze(project.getTitre(), project.getResume());
         project.setAiScore(result.getScore());
@@ -203,6 +258,48 @@ public class ProjectService {
             return project.getStudent().getId().equals(author.getId());
         }
         return project.getSupervisor() != null && project.getSupervisor().getId().equals(author.getId());
+    }
+
+    private SupervisorComment requireComment(Long commentId) {
+        SupervisorComment comment = commentId == null ? null : entityManager.find(SupervisorComment.class, commentId);
+        if (comment == null) {
+            throw new IllegalArgumentException("Commentaire introuvable.");
+        }
+        return comment;
+    }
+
+    private ProgressReport requireReport(Long reportId) {
+        ProgressReport report = reportId == null ? null : entityManager.find(ProgressReport.class, reportId);
+        if (report == null) {
+            throw new IllegalArgumentException("Rapport de suivi introuvable.");
+        }
+        return report;
+    }
+
+    private void requireCommentAccess(SupervisorComment comment, Long userId) {
+        User user = requireActiveUser(userId);
+        boolean isAuthor = comment.getSupervisor() != null && comment.getSupervisor().getId().equals(user.getId());
+        boolean isProjectSupervisor = comment.getProject().getSupervisor() != null
+                && comment.getProject().getSupervisor().getId().equals(user.getId());
+        if (user.getRole() != Role.ADMIN && !isAuthor && !isProjectSupervisor) {
+            throw new SecurityException("Vous ne pouvez pas modifier ce commentaire.");
+        }
+    }
+
+    private void requireReportAccess(ProgressReport report, Long userId) {
+        User user = requireActiveUser(userId);
+        boolean isAuthor = report.getAuthor().getId().equals(user.getId());
+        boolean isProjectSupervisor = report.getProject().getSupervisor() != null
+                && report.getProject().getSupervisor().getId().equals(user.getId());
+        if (user.getRole() != Role.ADMIN && !isAuthor && !isProjectSupervisor) {
+            throw new SecurityException("Vous ne pouvez pas modifier ce rapport de suivi.");
+        }
+    }
+
+    private void requireEditableContent(Project project) {
+        if (project.getStatut() == ProjectStatus.ARCHIVED) {
+            throw new IllegalStateException("Un projet archive ne peut plus etre modifie.");
+        }
     }
 
     private int normalizePercent(Integer progressPercent) {

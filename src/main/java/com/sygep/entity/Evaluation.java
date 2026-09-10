@@ -35,16 +35,16 @@ public class Evaluation implements Serializable {
     @JoinColumn(name = "evaluator_id", nullable = false)
     private User evaluator;
 
-    @Column(name = "technical_score", nullable = false)
+    @Column(name = "technical_score", nullable = false, precision = 4, scale = 2)
     private BigDecimal technicalScore = BigDecimal.ZERO;
 
-    @Column(name = "documentation_score", nullable = false)
+    @Column(name = "documentation_score", nullable = false, precision = 4, scale = 2)
     private BigDecimal documentationScore = BigDecimal.ZERO;
 
-    @Column(name = "presentation_score", nullable = false)
+    @Column(name = "presentation_score", nullable = false, precision = 4, scale = 2)
     private BigDecimal presentationScore = BigDecimal.ZERO;
 
-    @Column(name = "final_score", nullable = false)
+    @Column(name = "final_score", nullable = false, precision = 4, scale = 2)
     private BigDecimal finalScore = BigDecimal.ZERO;
 
     @Column(length = 3000)

@@ -26,6 +26,10 @@
             <p class="muted">La note finale est calculee automatiquement : technique 40 %, documentation 30 %, presentation 30 %.</p>
         </section>
 
+        <c:if test="${not empty evaluation}">
+            <div class="message success">Projet deja evalue (note actuelle : ${evaluation.finalScore}/20). Cette page met a jour l'evaluation existante.</div>
+        </c:if>
+
         <c:if test="${not empty error}">
             <div class="message error">${error}</div>
         </c:if>
@@ -66,7 +70,14 @@
                     <textarea name="feedback">${evaluation.feedback}</textarea>
                 </label>
 
-                <button type="submit">Enregistrer et archiver</button>
+                <c:choose>
+                    <c:when test="${not empty evaluation}">
+                        <button type="submit">Mettre a jour l'evaluation</button>
+                    </c:when>
+                    <c:otherwise>
+                        <button type="submit">Enregistrer et archiver</button>
+                    </c:otherwise>
+                </c:choose>
             </form>
         </section>
     </main>
