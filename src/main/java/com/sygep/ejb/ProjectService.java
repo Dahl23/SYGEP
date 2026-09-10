@@ -4,6 +4,7 @@ import com.sygep.dto.AIAnalysisResult;
 import com.sygep.entity.Evaluation;
 import com.sygep.entity.ProgressReport;
 import com.sygep.entity.Project;
+import com.sygep.entity.ProjectDocument;
 import com.sygep.entity.ProjectStatus;
 import com.sygep.entity.Role;
 import com.sygep.entity.SupervisorComment;
@@ -56,9 +57,13 @@ public class ProjectService {
         return aiService.analyze(titre, resume);
     }
 
+    public ProjectDocument findDocument(Long documentId) {
+        return requireDocument(documentId);
+    }
+
     public Project findProject(Long projectId) {
         Project project = requireProject(projectId);
-        initializeProjectSummary(project);
+        initializeProjectDetails(project);
         return project;
     }
 
@@ -159,12 +164,51 @@ public class ProjectService {
         project.setAiAnalyzedAt(LocalDateTime.now());
     }
 
+    public ProjectDocument addDocument(Long projectId, Long studentId, String fileName,
+                                       String storedName, String contentType, Long fileSize) {
+        Project project = requireProject(projectId);
+        if (!project.getStudent().getId().equals(studentId)) {
+            throw new SecurityException("Ce projet n'appartient pas a l'etudiant connecte.");
+        }
+        if (!project.isEditableByStudent()) {
+            throw new IllegalStateException("Ce projet ne peut plus recevoir de piece jointe a cette etape.");
+        }
+        if (fileName == null || fileName.isBlank()) {
+            throw new IllegalArgumentException("Le nom du fichier est obligatoire.");
+        }
+
+        ProjectDocument document = new ProjectDocument(project, fileName.trim(), storedName, contentType, fileSize);
+        entityManager.persist(document);
+        project.getDocuments().add(document);
+        return document;
+    }
+
+    public void deleteDocument(Long documentId, Long studentId) {
+        ProjectDocument document = requireDocument(documentId);
+        if (!document.getProject().getStudent().getId().equals(studentId)) {
+            throw new SecurityException("Ce document ne peut etre supprime que par son auteur.");
+        }
+        if (!document.getProject().isEditableByStudent()) {
+            throw new IllegalStateException("Ce projet ne peut plus etre modifie a cette etape.");
+        }
+        document.getProject().getDocuments().remove(document);
+        entityManager.remove(document);
+    }
+
     private Project requireProject(Long projectId) {
         Project project = projectId == null ? null : entityManager.find(Project.class, projectId);
         if (project == null) {
             throw new IllegalArgumentException("Projet introuvable.");
         }
         return project;
+    }
+
+    private ProjectDocument requireDocument(Long documentId) {
+        ProjectDocument document = documentId == null ? null : entityManager.find(ProjectDocument.class, documentId);
+        if (document == null) {
+            throw new IllegalArgumentException("Document introuvable.");
+        }
+        return document;
     }
 
     private User requireUser(Long userId, Role expectedRole) {
@@ -229,7 +273,6 @@ public class ProjectService {
 
     private void initializeProjectDetails(Project project) {
         initializeProjectSummary(project);
-        project.getSupervisorComments().size();
-        project.getProgressReports().size();
+        project.getDocuments().size();
     }
 }

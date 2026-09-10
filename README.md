@@ -67,6 +67,8 @@ Les comptes suivants sont crees automatiquement au premier acces a `/login` si a
 - Authentification, logout et filtrage par roles `ADMIN`, `STUDENT`, `SUPERVISOR`.
 - Soumission, modification et consultation des projets.
 - Validation, rejet et affectation de superviseur par l'administrateur.
+- Listes paginees (5 elements par page) et filtre par statut sur la validation des projets et la gestion des utilisateurs.
+- Pieces jointes sur les projets : upload (max 5 Mo), affichage, telechargement et suppression par l'etudiant.
 - Ajout de commentaires et rapports de suivi par le superviseur.
 - Evaluation technique/documentation/presentation avec calcul automatique de la note finale.
 - Archivage automatique apres evaluation.
@@ -77,7 +79,7 @@ Les comptes suivants sont crees automatiquement au premier acces a `/login` si a
 - `/login`, `/logout`
 - `/dashboard`
 - `/projects`
-- `/proposal/new`, `/proposal/edit`, `/proposal/submit`, `/proposal/update`, `/proposal/analyze`
+- `/proposal/new`, `/proposal/edit`, `/proposal/submit`, `/proposal/update`, `/proposal/analyze`, `/proposal/document/download`, `/proposal/document/delete`
 - `/admin/projects`, `/admin/validate`, `/admin/reject`, `/admin/assign`
 - `/supervisor/dashboard`, `/supervisor/comment`, `/supervisor/progress`
 - `/evaluation/new`, `/evaluation/save`

@@ -25,13 +25,22 @@ public class AdminService {
     }
 
     public List<Project> findProjectsForValidation() {
-        List<Project> projects = entityManager.createQuery(
-                        "SELECT p FROM SygepProject p "
-                                + "WHERE p.statut IN :statuses "
-                                + "ORDER BY p.submittedAt ASC, p.createdAt ASC",
-                        Project.class)
-                .setParameter("statuses", List.of(ProjectStatus.SUBMITTED, ProjectStatus.VALIDATED, ProjectStatus.REJECTED))
-                .getResultList();
+        return findProjectsForValidation(null);
+    }
+
+    public List<Project> findProjectsForValidation(ProjectStatus filter) {
+        String jpql = "SELECT p FROM SygepProject p "
+                + (filter == null
+                        ? "WHERE p.statut IN :statuses "
+                        : "WHERE p.statut = :status ")
+                + "ORDER BY p.submittedAt ASC, p.createdAt ASC";
+        jakarta.persistence.TypedQuery<Project> query = entityManager.createQuery(jpql, Project.class);
+        if (filter == null) {
+            query.setParameter("statuses", List.of(ProjectStatus.SUBMITTED, ProjectStatus.VALIDATED, ProjectStatus.REJECTED));
+        } else {
+            query.setParameter("status", filter);
+        }
+        List<Project> projects = query.getResultList();
         projects.forEach(this::initializeProjectSummary);
         return projects;
     }

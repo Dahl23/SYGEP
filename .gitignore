@@ -1,6 +1,7 @@
 target/
 *.log
 *.class
+*.zip
 
 .qodo/
 .idea/
@@ -8,3 +9,4 @@ target/
 .settings/
 .classpath
 .project
+.glassfish/

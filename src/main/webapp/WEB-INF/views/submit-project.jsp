@@ -44,7 +44,7 @@
         </c:if>
 
         <section class="grid two">
-            <form class="panel stack" method="post" action="${submitAction}">
+            <form class="panel stack" method="post" action="${submitAction}" enctype="multipart/form-data">
                 <c:if test="${editing}">
                     <input type="hidden" name="projectId" value="${effectiveProjectId}">
                 </c:if>
@@ -60,6 +60,27 @@
                 <label>Resume
                     <textarea name="resume" required>${resumeValue}</textarea>
                 </label>
+
+                <label>Piece jointe (optionnelle, PDF ou document, 5 Mo max)
+                    <input name="document" type="file" accept=".pdf,.doc,.docx,.txt,.odt">
+                </label>
+
+                <c:if test="${editing and not empty project.documents}">
+                    <div>
+                        <strong>Pieces jointes :</strong>
+                        <c:forEach var="document" items="${project.documents}">
+                            <div class="actions">
+                                <a href="${pageContext.request.contextPath}/proposal/document/download?id=${document.id}">${document.fileName}</a>
+                                <span class="muted">(${document.fileSize} octets)</span>
+                                <form method="post" action="${pageContext.request.contextPath}/proposal/document/delete">
+                                    <input type="hidden" name="documentId" value="${document.id}">
+                                    <input type="hidden" name="projectId" value="${effectiveProjectId}">
+                                    <button class="danger" type="submit">Supprimer</button>
+                                </form>
+                            </div>
+                        </c:forEach>
+                    </div>
+                </c:if>
 
                 <div class="actions">
                     <button type="submit" formaction="${pageContext.request.contextPath}/proposal/analyze" class="secondary">Analyser IA</button>

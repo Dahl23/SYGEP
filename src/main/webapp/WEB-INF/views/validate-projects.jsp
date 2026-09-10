@@ -34,10 +34,23 @@
         </c:if>
 
         <section class="section panel">
-            <h2>Projets a traiter</h2>
+            <h2>Projets a traiter (${totalProjects})</h2>
+
+            <form class="actions" method="get" action="${pageContext.request.contextPath}/admin/projects">
+                <label>Filtrer par statut
+                    <select name="status">
+                        <option value="">Tous les statuts</option>
+                        <c:forEach var="status" items="${allStatuses}">
+                            <option value="${status}" <c:if test="${statusFilter == status}">selected="selected"</c:if>>${status.label}</option>
+                        </c:forEach>
+                    </select>
+                </label>
+                <button class="secondary" type="submit">Filtrer</button>
+            </form>
+
             <c:choose>
                 <c:when test="${empty projects}">
-                    <p class="muted">Aucun projet en attente.</p>
+                    <p class="muted">Aucun projet dans cette liste.</p>
                 </c:when>
                 <c:otherwise>
                     <div class="list">
@@ -94,6 +107,18 @@
                             </article>
                         </c:forEach>
                     </div>
+
+                    <nav class="pagination">
+                        <c:if test="${page > 1}">
+                            <a class="button secondary"
+                               href="${pageContext.request.contextPath}/admin/projects?page=${page - 1}<c:if test="${not empty statusFilter}">&status=${statusFilter}</c:if>">Precedent</a>
+                        </c:if>
+                        <span class="muted">Page ${page} / ${totalPages}</span>
+                        <c:if test="${page < totalPages}">
+                            <a class="button secondary"
+                               href="${pageContext.request.contextPath}/admin/projects?page=${page + 1}<c:if test="${not empty statusFilter}">&status=${statusFilter}</c:if>">Suivant</a>
+                        </c:if>
+                    </nav>
                 </c:otherwise>
             </c:choose>
         </section>
@@ -149,6 +174,19 @@
                     </c:forEach>
                     </tbody>
                 </table>
+                <c:if test="${usersTotalPages > 1}">
+                    <nav class="pagination">
+                        <c:if test="${usersPage > 1}">
+                            <a class="button secondary"
+                               href="${pageContext.request.contextPath}/admin/projects?usersPage=${usersPage - 1}<c:if test="${not empty statusFilter}">&status=${statusFilter}</c:if>">Precedent</a>
+                        </c:if>
+                        <span class="muted">Page ${usersPage} / ${usersTotalPages}</span>
+                        <c:if test="${usersPage < usersTotalPages}">
+                            <a class="button secondary"
+                               href="${pageContext.request.contextPath}/admin/projects?usersPage=${usersPage + 1}<c:if test="${not empty statusFilter}">&status=${statusFilter}</c:if>">Suivant</a>
+                        </c:if>
+                    </nav>
+                </c:if>
             </article>
         </section>
     </main>

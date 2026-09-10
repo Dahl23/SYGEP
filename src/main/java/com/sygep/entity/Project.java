@@ -78,6 +78,9 @@ public class Project implements Serializable {
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgressReport> progressReports = new ArrayList<>();
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProjectDocument> documents = new ArrayList<>();
+
     @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Evaluation evaluation;
 
@@ -211,6 +214,14 @@ public class Project implements Serializable {
 
     public void setProgressReports(List<ProgressReport> progressReports) {
         this.progressReports = progressReports;
+    }
+
+    public List<ProjectDocument> getDocuments() {
+        return documents;
+    }
+
+    public void setDocuments(List<ProjectDocument> documents) {
+        this.documents = documents;
     }
 
     public Evaluation getEvaluation() {
