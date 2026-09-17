@@ -63,6 +63,15 @@
         <url-pattern>/evaluation/*</url-pattern>
     </servlet-mapping>
 
+    <servlet>
+        <servlet-name>ProjectFileServlet</servlet-name>
+        <servlet-class>com.sygep.servlet.ProjectFileServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ProjectFileServlet</servlet-name>
+        <url-pattern>/project/*</url-pattern>
+    </servlet-mapping>
+
     <filter>
         <filter-name>RoleFilter</filter-name>
         <filter-class>com.sygep.filter.RoleFilter</filter-class>

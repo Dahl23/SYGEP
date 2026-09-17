@@ -1,7 +1,9 @@
 target/
 *.log
 *.class
+*.zip
 
+.glassfish/
 .qodo/
 .idea/
 .vscode/

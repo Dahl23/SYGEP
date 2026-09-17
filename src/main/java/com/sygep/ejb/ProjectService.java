@@ -1,6 +1,5 @@
 package com.sygep.ejb;
 
-import com.sygep.dto.AIAnalysisResult;
 import com.sygep.entity.Evaluation;
 import com.sygep.entity.ProgressReport;
 import com.sygep.entity.Project;
@@ -8,11 +7,9 @@ import com.sygep.entity.ProjectStatus;
 import com.sygep.entity.Role;
 import com.sygep.entity.SupervisorComment;
 import com.sygep.entity.User;
-import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Stateless
@@ -21,20 +18,21 @@ public class ProjectService {
     @PersistenceContext(unitName = "sygepPU")
     private EntityManager entityManager;
 
-    @EJB
-    private AIService aiService;
-
-    public Project submitProject(Long studentId, String titre, String resume, String keywords) {
+    public Project submitProject(Long studentId, String titre, String resume, String keywords,
+                                 byte[] documentData, String documentFileName,
+                                 String documentContentType, Long documentSize) {
         User student = requireUser(studentId, Role.STUDENT);
         validateProjectText(titre, resume);
 
         Project project = new Project(titre.trim(), resume.trim(), trimToNull(keywords), student);
-        applyAI(project);
+        setDocument(project, documentData, documentFileName, documentContentType, documentSize);
         entityManager.persist(project);
         return project;
     }
 
-    public Project updateProject(Long projectId, Long studentId, String titre, String resume, String keywords) {
+    public Project updateProject(Long projectId, Long studentId, String titre, String resume, String keywords,
+                                 byte[] documentData, String documentFileName,
+                                 String documentContentType, Long documentSize) {
         Project project = requireProject(projectId);
         if (!project.getStudent().getId().equals(studentId)) {
             throw new SecurityException("Ce projet n'appartient pas a l'etudiant connecte.");
@@ -47,13 +45,11 @@ public class ProjectService {
         project.setTitre(titre.trim());
         project.setResume(resume.trim());
         project.setKeywords(trimToNull(keywords));
+        if (documentData != null) {
+            setDocument(project, documentData, documentFileName, documentContentType, documentSize);
+        }
         project.setStatut(ProjectStatus.SUBMITTED);
-        applyAI(project);
         return project;
-    }
-
-    public AIAnalysisResult analyzeDraft(String titre, String resume) {
-        return aiService.analyze(titre, resume);
     }
 
     public Project findProject(Long projectId) {
@@ -65,6 +61,13 @@ public class ProjectService {
     public Project findProjectWithDetails(Long projectId) {
         Project project = requireProject(projectId);
         initializeProjectDetails(project);
+        return project;
+    }
+
+    public Project findProjectDocument(Long projectId) {
+        Project project = requireProject(projectId);
+        project.getDocumentData();
+        initializeProjectSummary(project);
         return project;
     }
 
@@ -152,11 +155,67 @@ public class ProjectService {
         return report;
     }
 
-    private void applyAI(Project project) {
-        AIAnalysisResult result = aiService.analyze(project.getTitre(), project.getResume());
-        project.setAiScore(result.getScore());
-        project.setAiSuggestions(result.getSuggestionsText());
-        project.setAiAnalyzedAt(LocalDateTime.now());
+    public SupervisorComment findSupervisorComment(Long commentId, Long supervisorId) {
+        SupervisorComment comment = requireComment(commentId);
+        requireCommentAccess(comment, supervisorId);
+        return comment;
+    }
+
+    public SupervisorComment updateSupervisorComment(Long commentId, Long supervisorId, String newComment) {
+        SupervisorComment comment = requireComment(commentId);
+        requireCommentAccess(comment, supervisorId);
+        requireEditableContent(comment.getProject());
+        if (newComment == null || newComment.isBlank()) {
+            throw new IllegalArgumentException("Le commentaire est obligatoire.");
+        }
+        comment.setComment(newComment.trim());
+        return comment;
+    }
+
+    public void deleteSupervisorComment(Long commentId, Long supervisorId) {
+        SupervisorComment comment = requireComment(commentId);
+        requireCommentAccess(comment, supervisorId);
+        requireEditableContent(comment.getProject());
+        comment.getProject().getSupervisorComments().remove(comment);
+        entityManager.remove(comment);
+    }
+
+    public ProgressReport findProgressReport(Long reportId, Long userId) {
+        ProgressReport report = requireReport(reportId);
+        requireReportAccess(report, userId);
+        return report;
+    }
+
+    public ProgressReport updateProgressReport(Long reportId, Long authorId, String title, String content, Integer progressPercent) {
+        ProgressReport report = requireReport(reportId);
+        requireReportAccess(report, authorId);
+        requireEditableContent(report.getProject());
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Le titre du suivi est obligatoire.");
+        }
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("Le contenu du suivi est obligatoire.");
+        }
+        report.setTitle(title.trim());
+        report.setContent(content.trim());
+        report.setProgressPercent(normalizePercent(progressPercent));
+        return report;
+    }
+
+    public void deleteProgressReport(Long reportId, Long userId) {
+        ProgressReport report = requireReport(reportId);
+        requireReportAccess(report, userId);
+        requireEditableContent(report.getProject());
+        report.getProject().getProgressReports().remove(report);
+        entityManager.remove(report);
+    }
+
+    private void setDocument(Project project, byte[] documentData, String documentFileName,
+                             String documentContentType, Long documentSize) {
+        project.setDocumentData(documentData);
+        project.setDocumentFileName(documentFileName);
+        project.setDocumentContentType(documentContentType);
+        project.setDocumentSize(documentSize);
     }
 
     private Project requireProject(Long projectId) {
@@ -199,10 +258,49 @@ public class ProjectService {
         if (author.getRole() == Role.ADMIN) {
             return true;
         }
-        if (author.getRole() == Role.STUDENT) {
-            return project.getStudent().getId().equals(author.getId());
-        }
         return project.getSupervisor() != null && project.getSupervisor().getId().equals(author.getId());
+    }
+
+    private SupervisorComment requireComment(Long commentId) {
+        SupervisorComment comment = commentId == null ? null : entityManager.find(SupervisorComment.class, commentId);
+        if (comment == null) {
+            throw new IllegalArgumentException("Commentaire introuvable.");
+        }
+        return comment;
+    }
+
+    private ProgressReport requireReport(Long reportId) {
+        ProgressReport report = reportId == null ? null : entityManager.find(ProgressReport.class, reportId);
+        if (report == null) {
+            throw new IllegalArgumentException("Rapport de suivi introuvable.");
+        }
+        return report;
+    }
+
+    private void requireCommentAccess(SupervisorComment comment, Long userId) {
+        User user = requireActiveUser(userId);
+        boolean isAuthor = comment.getSupervisor() != null && comment.getSupervisor().getId().equals(user.getId());
+        boolean isProjectSupervisor = comment.getProject().getSupervisor() != null
+                && comment.getProject().getSupervisor().getId().equals(user.getId());
+        if (user.getRole() != Role.ADMIN && !isAuthor && !isProjectSupervisor) {
+            throw new SecurityException("Vous ne pouvez pas modifier ce commentaire.");
+        }
+    }
+
+    private void requireReportAccess(ProgressReport report, Long userId) {
+        User user = requireActiveUser(userId);
+        boolean isAuthor = report.getAuthor().getId().equals(user.getId());
+        boolean isProjectSupervisor = report.getProject().getSupervisor() != null
+                && report.getProject().getSupervisor().getId().equals(user.getId());
+        if (user.getRole() != Role.ADMIN && !isAuthor && !isProjectSupervisor) {
+            throw new SecurityException("Vous ne pouvez pas modifier ce rapport de suivi.");
+        }
+    }
+
+    private void requireEditableContent(Project project) {
+        if (project.getStatut() == ProjectStatus.ARCHIVED) {
+            throw new IllegalStateException("Un projet archive ne peut plus etre modifie.");
+        }
     }
 
     private int normalizePercent(Integer progressPercent) {

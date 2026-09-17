@@ -1,10 +1,10 @@
 # SYGEP
 
-Systeme de Gestion et d'Evaluation des Projets Academiques avec IA.
+Systeme de Gestion et d'Evaluation des Projets Academiques.
 
 ## Description
 
-SYGEP centralise le cycle de vie complet d'un projet academique: soumission, validation, suivi, evaluation et archivage. L'application suit une architecture multi-tiers Jakarta EE et prepare l'integration d'une assistance intelligente cote serveur pour l'analyse de qualite, la detection de similarite et l'aide a l'evaluation.
+SYGEP centralise le cycle de vie complet d'un projet academique : soumission, validation, suivi, evaluation et archivage. L'application suit une architecture multi-tiers Jakarta EE.
 
 ## Workflow resume
 
@@ -37,13 +37,6 @@ src/main/webapp
 
 Le fichier `glassfish-resources.xml` est preconfigure avec un pool PostgreSQL local de demonstration. Adaptez les identifiants et ajoutez le driver JDBC dans GlassFish avant de deployer.
 
-## Branches Git prevues
-
-- `main` : stable
-- `develop` : integration
-- `moduleA-proposition-validation` : travail Andy
-- `moduleB-supervision-evaluation` : travail Dahl
-
 ## Demarrage rapide
 
 1. Creer la base PostgreSQL `sygep`.
@@ -66,18 +59,24 @@ Les comptes suivants sont crees automatiquement au premier acces a `/login` si a
 
 - Authentification, logout et filtrage par roles `ADMIN`, `STUDENT`, `SUPERVISOR`.
 - Soumission, modification et consultation des projets.
+- Depot d'un document PDF ou Word (10 Mo max) avec chaque projet ; les superviseurs et l'administrateur peuvent le telecharger et le lire.
 - Validation, rejet et affectation de superviseur par l'administrateur.
+- Gestion des utilisateurs par l'administrateur (creation, activation/desactivation).
 - Ajout de commentaires et rapports de suivi par le superviseur.
-- Evaluation technique/documentation/presentation avec calcul automatique de la note finale.
+- Edition et suppression des commentaires et rapports de suivi par le superviseur.
+- Evaluation technique / documentation / presentation avec calcul automatique de la note finale.
+- Re-evaluation d'un projet deja archive avec mise a jour de la note finale.
+- Historique des evaluations effectuees par le superviseur.
 - Archivage automatique apres evaluation.
-- `AIService` simplifie : longueur du texte, score, qualite et suggestions.
+- Listes paginees sur le tableau de bord superviseur.
 
 ## Routes principales
 
 - `/login`, `/logout`
 - `/dashboard`
 - `/projects`
-- `/proposal/new`, `/proposal/edit`, `/proposal/submit`, `/proposal/update`, `/proposal/analyze`
-- `/admin/projects`, `/admin/validate`, `/admin/reject`, `/admin/assign`
+- `/project/view`, `/project/download`
+- `/proposal/new`, `/proposal/edit`, `/proposal/submit`, `/proposal/update`
+- `/admin/projects`, `/admin/validate`, `/admin/reject`, `/admin/assign`, `/admin/users/*`
 - `/supervisor/dashboard`, `/supervisor/comment`, `/supervisor/progress`
 - `/evaluation/new`, `/evaluation/save`
