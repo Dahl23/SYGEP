@@ -1,5 +1,6 @@
 package com.sygep.entity;
 
+import com.sygep.util.Dates;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -144,5 +145,49 @@ public class Evaluation implements Serializable {
 
     public void setEvaluatedAt(LocalDateTime evaluatedAt) {
         this.evaluatedAt = evaluatedAt;
+    }
+
+    public String getFinalScoreFormatted() {
+        return formatScore(finalScore);
+    }
+
+    public String getTechnicalScoreText() {
+        return getTechnicalScoreFormatted();
+    }
+
+    public String getTechnicalScoreFormatted() {
+        return formatScore(technicalScore);
+    }
+
+    public String getDocumentationScoreText() {
+        return getDocumentationScoreFormatted();
+    }
+
+    public String getDocumentationScoreFormatted() {
+        return formatScore(documentationScore);
+    }
+
+    public String getPresentationScoreText() {
+        return getPresentationScoreFormatted();
+    }
+
+    public String getPresentationScoreFormatted() {
+        return formatScore(presentationScore);
+    }
+
+    public String getFinalScoreText() {
+        return getFinalScoreFormatted();
+    }
+
+    public String getEvaluatedAtText() {
+        return Dates.format(evaluatedAt);
+    }
+
+    private String formatScore(BigDecimal value) {
+        if (value == null) {
+            return "-";
+        }
+        String text = value.stripTrailingZeros().toPlainString();
+        return text.replace('.', ',');
     }
 }

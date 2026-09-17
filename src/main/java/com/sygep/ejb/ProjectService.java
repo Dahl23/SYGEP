@@ -1,6 +1,5 @@
 package com.sygep.ejb;
 
-import com.sygep.dto.AIAnalysisResult;
 import com.sygep.entity.Evaluation;
 import com.sygep.entity.ProgressReport;
 import com.sygep.entity.Project;
@@ -8,11 +7,9 @@ import com.sygep.entity.ProjectStatus;
 import com.sygep.entity.Role;
 import com.sygep.entity.SupervisorComment;
 import com.sygep.entity.User;
-import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Stateless
@@ -21,20 +18,21 @@ public class ProjectService {
     @PersistenceContext(unitName = "sygepPU")
     private EntityManager entityManager;
 
-    @EJB
-    private AIService aiService;
-
-    public Project submitProject(Long studentId, String titre, String resume, String keywords) {
+    public Project submitProject(Long studentId, String titre, String resume, String keywords,
+                                 byte[] documentData, String documentFileName,
+                                 String documentContentType, Long documentSize) {
         User student = requireUser(studentId, Role.STUDENT);
         validateProjectText(titre, resume);
 
         Project project = new Project(titre.trim(), resume.trim(), trimToNull(keywords), student);
-        applyAI(project);
+        setDocument(project, documentData, documentFileName, documentContentType, documentSize);
         entityManager.persist(project);
         return project;
     }
 
-    public Project updateProject(Long projectId, Long studentId, String titre, String resume, String keywords) {
+    public Project updateProject(Long projectId, Long studentId, String titre, String resume, String keywords,
+                                 byte[] documentData, String documentFileName,
+                                 String documentContentType, Long documentSize) {
         Project project = requireProject(projectId);
         if (!project.getStudent().getId().equals(studentId)) {
             throw new SecurityException("Ce projet n'appartient pas a l'etudiant connecte.");
@@ -47,13 +45,11 @@ public class ProjectService {
         project.setTitre(titre.trim());
         project.setResume(resume.trim());
         project.setKeywords(trimToNull(keywords));
+        if (documentData != null) {
+            setDocument(project, documentData, documentFileName, documentContentType, documentSize);
+        }
         project.setStatut(ProjectStatus.SUBMITTED);
-        applyAI(project);
         return project;
-    }
-
-    public AIAnalysisResult analyzeDraft(String titre, String resume) {
-        return aiService.analyze(titre, resume);
     }
 
     public Project findProject(Long projectId) {
@@ -65,6 +61,13 @@ public class ProjectService {
     public Project findProjectWithDetails(Long projectId) {
         Project project = requireProject(projectId);
         initializeProjectDetails(project);
+        return project;
+    }
+
+    public Project findProjectDocument(Long projectId) {
+        Project project = requireProject(projectId);
+        project.getDocumentData();
+        initializeProjectSummary(project);
         return project;
     }
 
@@ -207,11 +210,12 @@ public class ProjectService {
         entityManager.remove(report);
     }
 
-    private void applyAI(Project project) {
-        AIAnalysisResult result = aiService.analyze(project.getTitre(), project.getResume());
-        project.setAiScore(result.getScore());
-        project.setAiSuggestions(result.getSuggestionsText());
-        project.setAiAnalyzedAt(LocalDateTime.now());
+    private void setDocument(Project project, byte[] documentData, String documentFileName,
+                             String documentContentType, Long documentSize) {
+        project.setDocumentData(documentData);
+        project.setDocumentFileName(documentFileName);
+        project.setDocumentContentType(documentContentType);
+        project.setDocumentSize(documentSize);
     }
 
     private Project requireProject(Long projectId) {
@@ -253,9 +257,6 @@ public class ProjectService {
     private boolean canReportProgress(Project project, User author) {
         if (author.getRole() == Role.ADMIN) {
             return true;
-        }
-        if (author.getRole() == Role.STUDENT) {
-            return project.getStudent().getId().equals(author.getId());
         }
         return project.getSupervisor() != null && project.getSupervisor().getId().equals(author.getId());
     }

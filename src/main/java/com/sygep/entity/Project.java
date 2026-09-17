@@ -1,5 +1,7 @@
 package com.sygep.entity;
 
+import com.sygep.util.Dates;
+import jakarta.persistence.Basic;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,6 +24,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Entity(name = "SygepProject")
 @Table(name = "sygep_projects")
@@ -81,11 +84,18 @@ public class Project implements Serializable {
     @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Evaluation evaluation;
 
-    @Column(name = "ai_score")
-    private Integer aiScore;
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "document_data", columnDefinition = "bytea")
+    private byte[] documentData;
 
-    @Column(name = "ai_suggestions", length = 3000)
-    private String aiSuggestions;
+    @Column(name = "document_file_name", length = 255)
+    private String documentFileName;
+
+    @Column(name = "document_content_type", length = 120)
+    private String documentContentType;
+
+    @Column(name = "document_size")
+    private Long documentSize;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -101,9 +111,6 @@ public class Project implements Serializable {
 
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
-
-    @Column(name = "ai_analyzed_at")
-    private LocalDateTime aiAnalyzedAt;
 
     public Project() {
     }
@@ -221,20 +228,84 @@ public class Project implements Serializable {
         this.evaluation = evaluation;
     }
 
-    public Integer getAiScore() {
-        return aiScore;
+    public byte[] getDocumentData() {
+        return documentData;
     }
 
-    public void setAiScore(Integer aiScore) {
-        this.aiScore = aiScore;
+    public void setDocumentData(byte[] documentData) {
+        this.documentData = documentData;
     }
 
-    public String getAiSuggestions() {
-        return aiSuggestions;
+    public String getDocumentFileName() {
+        return documentFileName;
     }
 
-    public void setAiSuggestions(String aiSuggestions) {
-        this.aiSuggestions = aiSuggestions;
+    public void setDocumentFileName(String documentFileName) {
+        this.documentFileName = documentFileName;
+    }
+
+    public String getDocumentContentType() {
+        return documentContentType;
+    }
+
+    public void setDocumentContentType(String documentContentType) {
+        this.documentContentType = documentContentType;
+    }
+
+    public Long getDocumentSize() {
+        return documentSize;
+    }
+
+    public void setDocumentSize(Long documentSize) {
+        this.documentSize = documentSize;
+    }
+
+    public String getDocumentSizeText() {
+        if (documentSize == null) {
+            return "";
+        }
+        if (documentSize >= 1048576) {
+            return String.format("%.1f Mo", documentSize / 1048576.0);
+        }
+        return Math.max(1, documentSize / 1024) + " Ko";
+    }
+
+    public boolean hasDocument() {
+        return documentFileName != null && !documentFileName.isBlank();
+    }
+
+    public String getDocumentKind() {
+        if (documentFileName == null) {
+            return "";
+        }
+        String name = documentFileName.toLowerCase(Locale.ROOT);
+        if (name.endsWith(".pdf")) {
+            return "PDF";
+        }
+        if (name.endsWith(".doc") || name.endsWith(".docx")) {
+            return "WORD";
+        }
+        return "DOCUMENT";
+    }
+
+    public String getCreatedAtText() {
+        return Dates.format(createdAt);
+    }
+
+    public String getUpdatedAtText() {
+        return Dates.format(updatedAt);
+    }
+
+    public String getSubmittedAtText() {
+        return Dates.format(submittedAt);
+    }
+
+    public String getValidatedAtText() {
+        return Dates.format(validatedAt);
+    }
+
+    public String getArchivedAtText() {
+        return Dates.format(archivedAt);
     }
 
     public LocalDateTime getCreatedAt() {
@@ -275,14 +346,6 @@ public class Project implements Serializable {
 
     public void setArchivedAt(LocalDateTime archivedAt) {
         this.archivedAt = archivedAt;
-    }
-
-    public LocalDateTime getAiAnalyzedAt() {
-        return aiAnalyzedAt;
-    }
-
-    public void setAiAnalyzedAt(LocalDateTime aiAnalyzedAt) {
-        this.aiAnalyzedAt = aiAnalyzedAt;
     }
 
     public boolean isEditableByStudent() {
